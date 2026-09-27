@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fallback theme colors — overridden inline on <html> by app/layout.js
+   with values from the admin Theme page (primary/secondary color). */
+:root {
+  --color-primary: #3D5AFE;
+  --color-secondary: #F2A93B;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #FAFAF8;
+  color: #0E1526;
+}
+
+::selection {
+  background-color: var(--color-primary);
+  color: #FAFAF8;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
