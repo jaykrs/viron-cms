@@ -7,6 +7,9 @@ import { useEffect, useState } from 'react';
 const NAV = [
   { href: '/admin', label: 'Pages' },
   { href: '/admin/components', label: 'Header & footer' },
+  { href: '/admin/content-models', label: 'Content models' },
+  { href: '/admin/content-fragments', label: 'Content fragments' },
+  { href: '/admin/graphql', label: 'GraphQL' },
   { href: '/admin/assets', label: 'Assets' },
   { href: '/admin/theme', label: 'Theme' },
   { href: '/admin/visitors', label: 'Visitors' },
@@ -53,7 +56,7 @@ export default function AdminLayout({ children }) {
               key={item.href}
               href={item.href}
               className={`block px-3 py-2 text-sm rounded ${
-                pathname === item.href ? 'bg-ink text-paper' : 'text-slate hover:bg-ink/5'
+                (item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)) ? 'bg-ink text-paper' : 'text-slate hover:bg-ink/5'
               }`}
             >
               {item.label}

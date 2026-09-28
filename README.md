@@ -58,6 +58,12 @@ app/
     visitors/track/route.js           page-view tracking (public, no-ops
                                        silently for an unknown visitor)
     visitors/[id]/route.js            visitor journey (auth) / delete (auth)
+    graphql/route.js                  GraphQL endpoint: queries public, mutations need a token
+    graphql/schema/route.js           schema as SDL (public)
+    content-models/route.js           admin REST for models (auth) — same service layer as GraphQL
+    content-models/[id]/route.js
+    content-fragments/route.js        admin REST for fragments (auth)
+    content-fragments/[id]/route.js
     export/route.js                   full site content bundle (auth)
     import/route.js                   restore/merge a bundle (auth)
   admin/                   admin console (pages list, editor, header/footer
@@ -74,6 +80,8 @@ lib/
     theme.js        site theme (colors + default header/footer)
     assets.js       image upload/list/delete (disk + DB record)
     visitors.js     cookie-consent capture + page-view analytics ("journey")
+    contentFragments.js content models (schemas), fragments, validation, querying
+    graphql.js      dynamic GraphQL schema built from the models; request execution
     exportImport.js assembles/restores the full site content bundle
     errors.js       shared ApiError class
     routeHelpers.js shared error handling + auth guard for route handlers
@@ -83,7 +91,8 @@ components/
   Header.jsx, Footer.jsx, ComponentRenderer.jsx (block registry + {{param}}
   substitution), CookieConsent.jsx (accept/reject banner + tracking),
   blocks/ (8 content block components, several with image support: Hero,
-  CTA, FeatureGrid, Testimonials), admin/ (block editor, asset picker modal)
+  CTA, FeatureGrid, Testimonials), admin/ (block editor, asset picker modal,
+  ModelEditor schema builder, FragmentForm schema-driven form)
 scripts/
   seed.js         seeds the Vireon Labs demo content, admin user, and theme
                   defaults
@@ -173,6 +182,84 @@ page-view history entirely (e.g. for an erasure request).
 > whatever privacy law applies to you (GDPR, CCPA, etc.) — that's a product
 > and legal decision, not something a default implementation can cover.
 
+### Content fragments & GraphQL (AEM-style structured content)
+
+Beyond page blocks, the CMS has **content models** (user-defined schemas) and
+**content fragments** (entries of a model), exposed over GraphQL.
+
+**Models** (`/admin/content-models`) — a schema builder. Each field has a key,
+label, type, required flag, optional "multiple values" list, and help text.
+Field types: single-line text, multi-line text, rich text, number, whole
+number, yes/no, date, date-time, enumeration (options list), image (picked
+from the asset library), **fragment reference** (points at another model —
+or the same one), and JSON. A model's `apiName` (PascalCase) is fixed after
+creation because it is part of the public GraphQL contract.
+
+**Fragments** (`/admin/content-fragments`) — the form is generated from the
+model, so a new model instantly has a working create/edit form: the right
+input per type, repeatable inputs for list fields, an asset picker for
+images, and a dropdown of existing fragments for references. Each fragment
+has a title, a URL-safe name (its `_path` is `/{Model}/{name}`), and a
+`draft` / `published` status. Everything is validated server-side against the
+model (required fields, types, enum options, reference targets, image URL
+scheme) — the forms are a convenience, not the only line of defense.
+
+**GraphQL** — `POST` or `GET` `/api/graphql`. The schema is *generated from
+the models* and rebuilds automatically when a model changes (no restart):
+
+| For a model `Article`… | |
+|---|---|
+| `articleList(limit, offset, sortBy, sortDir, filter)` | `{ items, total }` |
+| `articleById(id)`, `articleByPath(path)` | one fragment or `null` |
+| `createArticle(title, name, status, data)` | needs token |
+| `updateArticle(id, title, name, status, data)` | needs token — partial update, `null` clears a field |
+| `deleteArticle(id)` | needs token |
+
+Plus `contentModels` / `contentModel(apiName)` (public) and
+`createContentModel` / `updateContentModel` / `deleteContentModel` (token).
+Every fragment also exposes `_id _path _name _title _status _model _createdAt
+_updatedAt`. `filter` takes `{"category":"AI"}` or operators:
+`{"headline":{"contains":"cloud"}}` (`eq ne contains startsWith gt gte lt lte in`).
+
+**Access model**
+- **Queries are public** and only ever return `published` fragments (this
+  includes fragments reached through references).
+- **Mutations require** `Authorization: Bearer <token>` — the same JWT the
+  admin login issues (`POST /api/auth/login`). Without one the API answers
+  `401`, and mutations over `GET` are refused with `405`. Create maps to the
+  usual `POST`, update to `PUT`, delete to `DELETE` — as GraphQL mutations.
+- A request carrying a valid token also sees **drafts**, so an authenticated
+  preview client works with the same queries.
+- The public endpoint has CORS open (auth is a header, never a cookie),
+  a 20 KB query limit, a max nesting depth of 10, a max of 300 selected
+  fields (stops alias flooding), and `limit` capped at 100.
+
+```bash
+# public read
+curl -G http://localhost:3000/api/graphql \
+  --data-urlencode 'query={ articleList { total items { _path headline author { fullName } } } }'
+
+# authenticated write
+TOKEN=$(curl -s -X POST http://localhost:3000/api/auth/login -H 'Content-Type: application/json' \
+  -d '{"email":"admin","password":"admin123"}' | python3 -c 'import json,sys;print(json.load(sys.stdin)["token"])')
+curl -X POST http://localhost:3000/api/graphql -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"query":"mutation { createFaq(title:\"New\", status:\"published\", data:{question:\"Q?\", answer:\"A.\"}) { _path } }"}'
+```
+
+`/admin/graphql` is a small playground (run queries anonymously or with your
+admin token, browse the SDL). The seed creates three models — **Author**,
+**Article** (with a reference to Author, tags list, enum, date, boolean,
+integer), **Faq** — with sample fragments, one of which is a draft.
+
+Design notes: field values live in a JSON column and list queries filter/sort
+with `json_extract` (fine for thousands of fragments per model; a very large
+catalog would want indexed columns). References are stored as fragment ids;
+deleting a referenced fragment leaves a dangling reference that resolves to
+`null` rather than erroring. Models that are referenced by other models — or
+that still have fragments — can't be deleted without an explicit `force`.
+The admin UI uses REST routes (`/api/content-models`, `/api/content-fragments`)
+that share the same service layer and validation as the GraphQL mutations.
+
 ### Assets (image upload)
 
 `/admin/assets` uploads images to `public/uploads/` (served as normal
@@ -221,7 +308,8 @@ notes below).
 
 `/admin/export-import` downloads or restores a **complete content bundle**:
 every page (with its blocks and SEO), the header/footer component library,
-and the theme — as one JSON file (`lib/server/exportImport.js`).
+the theme, **and all content models and content fragments** — as one JSON
+file (`lib/server/exportImport.js`, format version 2; version-1 files still import).
 
 - **Export** references components by *name*, not numeric id, so a bundle
   exported from one database imports cleanly into a different one (e.g.
@@ -232,6 +320,10 @@ and the theme — as one JSON file (`lib/server/exportImport.js`).
   anything new is created. Nothing outside the bundle is ever deleted, so
   re-running the same import twice is safe, and importing a partial bundle
   (e.g. just one page) won't touch the rest of the site.
+- Fragment references are exported as `/Model/name` paths and re-linked on
+  import (models first, then fragments in two passes, so cycles and
+  forward references work). A fragment that fails validation is reported in
+  the result and skipped; it never blocks the rest of the import.
 - Visitor/analytics data is deliberately **excluded** from every export —
   this is a content-migration tool, not a data-export tool, and visitor
   emails shouldn't travel between environments just because a page did.

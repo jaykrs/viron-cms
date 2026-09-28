@@ -1,0 +1,32 @@
+import { NextResponse } from 'next/server';
+import { getModelById, updateModel, deleteModel } from '../../../../lib/server/contentFragments';
+import { jsonError, requireAuth } from '../../../../lib/server/routeHelpers';
+
+export async function GET(request, { params }) {
+  try {
+    requireAuth(request);
+    return NextResponse.json(await getModelById(params.id));
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    requireAuth(request);
+    return NextResponse.json(await updateModel(Number(params.id), await request.json()));
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    requireAuth(request);
+    const force = new URL(request.url).searchParams.get('force') === '1';
+    await deleteModel(Number(params.id), { force });
+    return new NextResponse(null, { status: 204 });
+  } catch (err) {
+    return jsonError(err);
+  }
+}

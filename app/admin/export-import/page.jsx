@@ -34,9 +34,13 @@ export default function ExportImportPage() {
       const bundle = JSON.parse(text);
       const summary = await importSiteBundle(bundle);
       setStatus(
-        `Imported ${summary.pagesImported} page(s) and ${summary.componentsImported} component(s)` +
+        `Imported ${summary.pagesImported} page(s), ${summary.componentsImported} component(s), ` +
+          `${summary.modelsImported} content model(s) and ${summary.fragmentsImported} content fragment(s)` +
           (summary.themeUpdated ? ', and updated the theme.' : '.')
       );
+      if (summary.contentErrors && summary.contentErrors.length) {
+        setError(`Some content was skipped: ${summary.contentErrors.slice(0, 5).join(' | ')}`);
+      }
     } catch (err) {
       setError(err.message.includes('JSON') ? 'That file is not valid JSON.' : err.message);
     } finally {
@@ -50,7 +54,7 @@ export default function ExportImportPage() {
       <h1 className="font-display text-2xl font-bold text-ink">Export &amp; import</h1>
       <p className="text-sm text-slate mt-1">
         Back up or move the site&apos;s content — every page (with its blocks and SEO), the header/footer
-        library, and the theme.
+        library, the theme, and all content models and fragments.
       </p>
 
       {error && <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</div>}

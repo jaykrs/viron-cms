@@ -68,6 +68,140 @@ async function upsertPage(def) {
   return info.lastInsertRowid;
 }
 
+
+// ---------------- Content fragment models + sample fragments ----------------
+const cf = require('../lib/server/contentFragments');
+
+async function ensureModel(def) {
+  return (await cf.getModelByApiName(def.apiName)) || cf.createModel(def);
+}
+
+async function ensureFragment(model, def) {
+  const existing = await cf.findFragmentByPath(`/${model.apiName}/${def.name}`);
+  return existing || cf.createFragment(model.id, def);
+}
+
+async function seedContentFragments() {
+  const Author = await ensureModel({
+    name: 'Author',
+    apiName: 'Author',
+    description: 'A person who writes for the site',
+    fields: [
+      { name: 'fullName', label: 'Full name', type: 'text', required: true },
+      { name: 'role', label: 'Role', type: 'text' },
+      { name: 'bio', label: 'Bio', type: 'longtext', helpText: 'Two or three sentences.' },
+      { name: 'photo', label: 'Photo', type: 'image', helpText: 'Pick from the asset library.' },
+    ],
+  });
+
+  const Article = await ensureModel({
+    name: 'Article',
+    apiName: 'Article',
+    description: 'A blog article',
+    fields: [
+      { name: 'headline', label: 'Headline', type: 'text', required: true },
+      { name: 'summary', label: 'Summary', type: 'longtext' },
+      { name: 'body', label: 'Body', type: 'richtext', required: true, helpText: 'HTML or Markdown, as your front end expects.' },
+      { name: 'category', label: 'Category', type: 'enum', required: true, options: ['Engineering', 'AI', 'Cloud', 'Company'] },
+      { name: 'author', label: 'Author', type: 'reference', refModel: 'Author' },
+      { name: 'tags', label: 'Tags', type: 'text', multiple: true },
+      { name: 'publishDate', label: 'Publish date', type: 'date' },
+      { name: 'readingTime', label: 'Reading time (minutes)', type: 'integer' },
+      { name: 'featured', label: 'Featured', type: 'boolean' },
+      { name: 'heroImage', label: 'Hero image', type: 'image' },
+    ],
+  });
+
+  const Faq = await ensureModel({
+    name: 'FAQ',
+    apiName: 'Faq',
+    description: 'A frequently asked question',
+    fields: [
+      { name: 'question', label: 'Question', type: 'text', required: true },
+      { name: 'answer', label: 'Answer', type: 'richtext', required: true },
+      { name: 'topic', label: 'Topic', type: 'enum', options: ['Pricing', 'Process', 'Technology'] },
+      { name: 'sortOrder', label: 'Sort order', type: 'integer' },
+    ],
+  });
+
+  const maya = await ensureFragment(Author, {
+    title: 'Maya Iyer',
+    name: 'maya-iyer',
+    status: 'published',
+    data: {
+      fullName: 'Maya Iyer',
+      role: 'Head of Engineering',
+      bio: 'Maya leads delivery at Vireon Labs and has shipped full stack products for logistics, retail, and healthcare teams.',
+    },
+  });
+  const tomas = await ensureFragment(Author, {
+    title: 'Tomas Reyes',
+    name: 'tomas-reyes',
+    status: 'published',
+    data: {
+      fullName: 'Tomas Reyes',
+      role: 'Cloud & AI Lead',
+      bio: 'Tomas designs the automation and applied-AI workstreams, from infrastructure-as-code to retrieval assistants.',
+    },
+  });
+
+  await ensureFragment(Article, {
+    title: 'Start AI with one boring workflow',
+    name: 'start-ai-with-one-boring-workflow',
+    status: 'published',
+    data: {
+      headline: 'Start AI with one boring workflow',
+      summary: 'The fastest way for a small business to get value from AI is to pick the most repetitive back-office task and automate only that.',
+      body: '<p>Most SME AI projects stall because the scope is a vision, not a workflow. Pick one repetitive task, measure how long it takes today, and ship a narrow assistant for it.</p><p>Invoice matching, support triage, and proposal drafting are all good first candidates.</p>',
+      category: 'AI',
+      author: tomas.id,
+      tags: ['ai', 'automation', 'sme'],
+      publishDate: '2026-03-12',
+      readingTime: 5,
+      featured: true,
+    },
+  });
+  await ensureFragment(Article, {
+    title: 'Terraform state on a small team: what actually breaks',
+    name: 'terraform-state-on-a-small-team',
+    status: 'published',
+    data: {
+      headline: 'Terraform state on a small team: what actually breaks',
+      summary: 'Remote state, locking, and one boring naming convention prevent most of the outages small teams run into.',
+      body: '<p>The failures are rarely exotic: two people applying at once, state stored on a laptop, or a module changed without a plan review.</p><p>Use remote state with locking, require plans in CI, and keep environments in separate state files.</p>',
+      category: 'Cloud',
+      author: maya.id,
+      tags: ['terraform', 'cloud', 'devops'],
+      publishDate: '2026-02-03',
+      readingTime: 6,
+      featured: false,
+    },
+  });
+  await ensureFragment(Article, {
+    title: 'Server rendering vs static for content-heavy sites',
+    name: 'server-rendering-vs-static',
+    status: 'draft',
+    data: {
+      headline: 'Server rendering vs static for content-heavy sites',
+      summary: 'Draft: when a CMS-backed marketing site should render on the server and when it can be pre-built.',
+      body: '<p>Work in progress.</p>',
+      category: 'Engineering',
+      author: maya.id,
+      tags: ['nextjs', 'ssr'],
+      readingTime: 7,
+    },
+  });
+
+  const faqs = [
+    ['How long does a first release take?', 'how-long-does-a-first-release-take', 'Process', 1, '<p>Most MVPs ship in four to eight weeks, depending on integrations.</p>'],
+    ['Do we own the code?', 'do-we-own-the-code', 'Technology', 2, '<p>Yes. Everything we build is handed over with no lock-in.</p>'],
+    ['How is work priced?', 'how-is-work-priced', 'Pricing', 3, '<p>Fixed-scope pilots first; ongoing work is a monthly retainer.</p>'],
+  ];
+  for (const [question, name, topic, sortOrder, answer] of faqs) {
+    await ensureFragment(Faq, { title: question, name, status: 'published', data: { question, answer, topic, sortOrder } });
+  }
+}
+
 async function run() {
   // Admin user — a plain username rather than an email address (simpler
   // for a demo login; the admin_users.email column just stores the login
@@ -590,6 +724,9 @@ async function run() {
     `UPDATE theme_settings SET default_header_id = ?, default_footer_id = ?, updated_at = datetime('now') WHERE id = 1`,
     [headerId, footerId]
   );
+
+  await seedContentFragments();
+  console.log('Seeded content models + fragments (Author, Article, Faq).');
 
   console.log('Seed complete.');
 }
