@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createPage, listComponents } from '../../../../lib/api';
+import { createPage, listComponents, listLocales } from '../../../../lib/api';
+import { DEFAULT_LOCALE } from '../../../../lib/localeCatalog';
 
 export default function NewPage() {
   const router = useRouter();
   const [headers, setHeaders] = useState([]);
   const [footers, setFooters] = useState([]);
+  const [locales, setLocales] = useState([]);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -21,11 +23,13 @@ export default function NewPage() {
     showInNav: true,
     headerId: '',
     footerId: '',
+    locale: DEFAULT_LOCALE,
   });
 
   useEffect(() => {
     listComponents('header').then(setHeaders).catch(() => {});
     listComponents('footer').then(setFooters).catch(() => {});
+    listLocales().then((d) => setLocales(d.enabled)).catch(() => {});
   }, []);
 
   function set(key, value) {
@@ -40,6 +44,7 @@ export default function NewPage() {
       const page = await createPage({
         title: form.title,
         slug: form.slug || undefined,
+        locale: form.locale,
         routeType: form.routeType,
         paramName: form.routeType === 'dynamic' ? form.paramName : null,
         navLabel: form.navLabel || form.title,
@@ -78,6 +83,28 @@ export default function NewPage() {
             placeholder="e.g. Case Studies"
           />
         </div>
+
+        {locales.length > 1 && (
+          <div>
+            <label className="block text-sm text-slate mb-1.5">Language</label>
+            <select
+              value={form.locale}
+              onChange={(e) => set('locale', e.target.value)}
+              className="w-full border border-hairline px-3 py-2.5 bg-paper"
+            >
+              {locales.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                  {l.code === DEFAULT_LOCALE ? ' (default, served at /)' : ` (served at /${l.code}/...)`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-xs text-slate">
+              A translation shares its slug with the same page in other languages — use the same slug as the
+              English version if you want them linked.
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm text-slate mb-1.5">Route type</label>

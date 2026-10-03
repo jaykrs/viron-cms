@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 const db = require('../lib/server/db');
+const { enableLocale } = require('../lib/server/locales');
+const { duplicatePageForLocale, publishPage: publishPageSvc } = require('../lib/server/pages');
 
 const nav = [
   { label: 'Home', href: '/' },
@@ -199,6 +201,141 @@ async function seedContentFragments() {
   ];
   for (const [question, name, topic, sortOrder, answer] of faqs) {
     await ensureFragment(Faq, { title: question, name, status: 'published', data: { question, answer, topic, sortOrder } });
+  }
+}
+
+// ---------------- French translations (demonstrates multilingual pages) ----------------
+async function seedFrench() {
+  await enableLocale('fr');
+
+  const headerFrId = await upsertComponent({
+    name: 'Main Header (FR)',
+    kind: 'header',
+    props: {
+      logoText: 'Vireon Labs',
+      nav: [
+        { label: 'Accueil', href: '/' },
+        { label: 'Services', href: '/services' },
+        { label: 'À propos', href: '/about' },
+        { label: 'Contact', href: '/contact' },
+      ],
+      cta: { label: 'Démarrer un projet', href: '/contact' },
+    },
+  });
+  const footerFrId = await upsertComponent({
+    name: 'Main Footer (FR)',
+    kind: 'footer',
+    props: {
+      columns: [
+        {
+          heading: 'Services',
+          links: [
+            { label: 'Développement Full Stack', href: '/services/full-stack-development' },
+            { label: 'Conseil en IA', href: '/services/ai-consulting' },
+            { label: 'Applications Web & Mobile', href: '/services/web-mobile-app-development' },
+            { label: 'Automatisation Cloud', href: '/services/cloud-automation' },
+          ],
+        },
+        {
+          heading: 'Entreprise',
+          links: [
+            { label: 'À propos', href: '/about' },
+            { label: 'Contact', href: '/contact' },
+          ],
+        },
+      ],
+      copyright: `© ${new Date().getFullYear()} Vireon Labs. Tous droits réservés.`,
+      social: [
+        { label: 'LinkedIn', href: 'https://linkedin.com' },
+        { label: 'GitHub', href: 'https://github.com' },
+      ],
+    },
+  });
+
+  const home = await db.get("SELECT id FROM pages WHERE slug = 'home' AND locale = 'en'");
+  const about = await db.get("SELECT id FROM pages WHERE slug = 'about' AND locale = 'en'");
+
+  async function frenchFrom(sourceId, overrides) {
+    const existing = await db.get('SELECT id FROM pages WHERE slug = (SELECT slug FROM pages WHERE id = ?) AND locale = ?', [sourceId, 'fr']);
+    const page = existing
+      ? await db.get('SELECT * FROM pages WHERE id = ?', [existing.id])
+      : await duplicatePageForLocale(sourceId, 'fr').then((p) => ({ id: p.id }));
+    await db.run(
+      `UPDATE pages SET title = ?, seo_title = ?, seo_description = ?, updated_at = datetime('now') WHERE id = ?`,
+      [overrides.title, overrides.seoTitle, overrides.seoDescription, page.id]
+    );
+    if (overrides.blocks) {
+      const del = 'DELETE FROM page_blocks WHERE page_id = ?';
+      await db.run(del, [page.id]);
+      for (let i = 0; i < overrides.blocks.length; i += 1) {
+        await db.run(
+          'INSERT INTO page_blocks (page_id, type, position, props_json) VALUES (?, ?, ?, ?)',
+          [page.id, overrides.blocks[i].type, i, JSON.stringify(overrides.blocks[i].props)]
+        );
+      }
+    }
+    await db.run('UPDATE pages SET header_id = ?, footer_id = ? WHERE id = ?', [headerFrId, footerFrId, page.id]);
+    await publishPageSvc(page.id);
+    return page.id;
+  }
+
+  if (home) {
+    await frenchFrom(home.id, {
+      title: 'Accueil',
+      seoTitle: 'Vireon Labs — Développement full stack et conseil en IA',
+      seoDescription:
+        "Vireon Labs aide les PME à développer des logiciels full stack, adopter l'IA de façon responsable et automatiser leur infrastructure cloud.",
+      blocks: [
+        {
+          type: 'hero',
+          props: {
+            eyebrow: 'Partenaire logiciel pour entreprises en croissance',
+            title: 'Nous construisons les systèmes sur lesquels repose votre entreprise.',
+            subtitle:
+              "Vireon Labs conçoit, livre et exploite des produits full stack, de l'IA appliquée et une infrastructure cloud pour les PME qui ont besoin d'ingénierie senior sans équipe plateforme interne.",
+            primaryCta: { label: 'Réserver une consultation gratuite', href: '/contact' },
+            secondaryCta: { label: 'Voir nos services', href: '/services' },
+          },
+        },
+        {
+          type: 'cta',
+          props: {
+            heading: 'Dites-nous ce qui est lent, manuel ou fragile.',
+            subhead: 'Un appel de 30 minutes suffit généralement pour savoir si c’est une correction de deux semaines ou une refonte plus large.',
+            primaryCta: { label: 'Réserver une consultation gratuite', href: '/contact' },
+          },
+        },
+      ],
+    });
+  }
+
+  if (about) {
+    await frenchFrom(about.id, {
+      title: 'À propos',
+      seoTitle: 'À propos de Vireon Labs',
+      seoDescription:
+        'Vireon Labs est un partenaire en développement full stack, conseil en IA et automatisation cloud pour les PME.',
+      blocks: [
+        {
+          type: 'hero',
+          props: {
+            eyebrow: 'À propos de nous',
+            title: 'Une petite équipe qui livre comme une grande.',
+            subtitle:
+              "Vireon Labs est né d'un principe simple : les PME méritent la même rigueur d'ingénierie que les startups financées, sans avoir à recruter une équipe plateforme.",
+          },
+        },
+        {
+          type: 'richtext',
+          props: {
+            heading: 'Comment nous travaillons',
+            paragraphs: [
+              'Nous gardons des missions restreintes et confiées à des profils seniors. Chaque client travaille directement avec les ingénieurs qui construisent son système.',
+            ],
+          },
+        },
+      ],
+    });
   }
 }
 
@@ -726,6 +863,7 @@ async function run() {
   );
 
   await seedContentFragments();
+  await seedFrench();
   console.log('Seeded content models + fragments (Author, Article, Faq).');
 
   console.log('Seed complete.');

@@ -84,27 +84,19 @@ export default function CookieConsent() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-hairline bg-paper shadow-[0_-4px_16px_rgba(14,21,38,0.06)]">
-      <div className="max-w-content mx-auto px-6 py-5">
+    <div className="cookie-consent">
+      <div className="cookie-consent__inner">
         {status === 'prompt' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4 md:justify-between">
-            <p className="text-sm text-slate max-w-xl">
+          <div className="cookie-consent__row">
+            <p className="cookie-consent__text">
               We use cookies to understand how visitors use this site. Accepting shares your email with us so
               we can follow up — reject and you can keep browsing with nothing tracked either way.
             </p>
-            <div className="flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={handleReject}
-                className="text-sm font-medium border border-hairline px-4 py-2 hover:border-ink transition-colors"
-              >
+            <div className="cookie-consent__actions">
+              <button type="button" onClick={handleReject} className="btn-outline">
                 Reject
               </button>
-              <button
-                type="button"
-                onClick={() => setStatus('emailForm')}
-                className="text-sm font-medium border border-ink bg-ink text-paper px-4 py-2 hover:bg-signal hover:border-signal transition-colors"
-              >
+              <button type="button" onClick={() => setStatus('emailForm')} className="btn-outline--dark">
                 Accept
               </button>
             </div>
@@ -112,12 +104,9 @@ export default function CookieConsent() {
         )}
 
         {status === 'emailForm' && (
-          <form
-            onSubmit={handleEmailSubmit}
-            className="flex flex-col md:flex-row md:items-center gap-3 md:justify-between"
-          >
-            <p className="text-sm text-slate">One last step — what&apos;s your email?</p>
-            <div className="flex items-center gap-3">
+          <form onSubmit={handleEmailSubmit} className="cookie-consent__form">
+            <p className="cookie-consent__form-text">One last step — what&apos;s your email?</p>
+            <div className="cookie-consent__form-fields">
               <input
                 type="email"
                 required
@@ -125,17 +114,13 @@ export default function CookieConsent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your email address"
-                className="border border-hairline px-3 py-2 text-sm outline-none focus:border-ink w-56"
+                className="cookie-consent__input"
               />
-              <button
-                type="submit"
-                disabled={submitting}
-                className="text-sm font-medium border border-ink bg-ink text-paper px-4 py-2 hover:bg-signal hover:border-signal transition-colors disabled:opacity-60 shrink-0"
-              >
+              <button type="submit" disabled={submitting} className="cookie-consent__submit">
                 {submitting ? 'Saving…' : 'Continue'}
               </button>
             </div>
-            {error && <span className="text-xs text-red-600">{error}</span>}
+            {error && <span className="cookie-consent__error">{error}</span>}
           </form>
         )}
       </div>

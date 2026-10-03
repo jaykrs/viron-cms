@@ -2,37 +2,64 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { DEFAULT_LOCALE } from '../lib/localeCatalog';
 
-export default function Header({ data }) {
+function LanguageSwitcher({ locale, enabledLocales }) {
+  const router = useRouter();
+  const pathname = usePathname() || '/';
+
+  if (!enabledLocales || enabledLocales.length < 2) return null;
+
+  const prefix = locale !== DEFAULT_LOCALE ? `/${locale}` : '';
+  const remainder = prefix && pathname.startsWith(prefix) ? pathname.slice(prefix.length) || '/' : pathname;
+
+  function targetFor(code) {
+    if (code === DEFAULT_LOCALE) return remainder;
+    return remainder === '/' ? `/${code}` : `/${code}${remainder}`;
+  }
+
+  return (
+    <select
+      aria-label="Choose language"
+      value={locale}
+      onChange={(e) => router.push(targetFor(e.target.value))}
+      className="lang-switcher"
+    >
+      {enabledLocales.map((l) => (
+        <option key={l.code} value={l.code}>
+          {l.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+export default function Header({ data, locale = DEFAULT_LOCALE, enabledLocales = [] }) {
   const [open, setOpen] = useState(false);
   if (!data) return null;
   const { logoText, nav = [], cta } = data.props || {};
+  const home = locale === DEFAULT_LOCALE ? '/' : `/${locale}`;
 
   return (
-    <header className="border-b border-hairline bg-paper/95 backdrop-blur sticky top-0 z-40">
-      <div className="max-w-content mx-auto px-6 flex items-center justify-between h-16">
-        <Link href="/" className="font-display text-lg font-bold tracking-tight text-ink">
+    <header className="site-header">
+      <div className="site-header__bar">
+        <Link href={home} className="site-header__logo">
           {logoText || 'Vireon Labs'}
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="site-header__nav">
           {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-[15px] text-slate hover:text-ink transition-colors"
-            >
+            <Link key={item.href} href={item.href} className="site-header__nav-link">
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="site-header__actions">
+          <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} />
           {cta && (
-            <Link
-              href={cta.href}
-              className="inline-flex items-center rounded-none border border-ink bg-ink px-4 py-2 text-sm font-medium text-paper hover:bg-signal hover:border-signal transition-colors"
-            >
+            <Link href={cta.href} className="site-header__cta">
               {cta.label}
             </Link>
           )}
@@ -42,28 +69,32 @@ export default function Header({ data }) {
           type="button"
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
-          className="md:hidden flex flex-col justify-center gap-1.5 w-8 h-8"
+          className="site-header__burger"
           onClick={() => setOpen((v) => !v)}
         >
-          <span className={`h-[2px] w-6 bg-ink transition-transform ${open ? 'translate-y-2 rotate-45' : ''}`} />
-          <span className={`h-[2px] w-6 bg-ink transition-opacity ${open ? 'opacity-0' : ''}`} />
-          <span className={`h-[2px] w-6 bg-ink transition-transform ${open ? '-translate-y-2 -rotate-45' : ''}`} />
+          <span className={`site-header__burger-line ${open ? 'translate-y-2 rotate-45' : ''}`} />
+          <span className={`site-header__burger-line--fade ${open ? 'opacity-0' : ''}`} />
+          <span className={`site-header__burger-line ${open ? '-translate-y-2 -rotate-45' : ''}`} />
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden border-t border-hairline bg-paper px-6 py-4 flex flex-col gap-4">
+        <div className="site-header__mobile-menu">
           {nav.map((item) => (
-            <Link key={item.href} href={item.href} className="text-ink" onClick={() => setOpen(false)}>
+            <Link
+              key={item.href}
+              href={item.href}
+              className="site-header__mobile-link"
+              onClick={() => setOpen(false)}
+            >
               {item.label}
             </Link>
           ))}
+          <div className="pt-2">
+            <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} />
+          </div>
           {cta && (
-            <Link
-              href={cta.href}
-              onClick={() => setOpen(false)}
-              className="inline-flex w-fit items-center border border-ink bg-ink px-4 py-2 text-sm font-medium text-paper"
-            >
+            <Link href={cta.href} onClick={() => setOpen(false)} className="site-header__mobile-cta">
               {cta.label}
             </Link>
           )}

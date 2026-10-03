@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Centralized component styles (header, footer, cookie banner, content
+   blocks) — see app/components.css for the full rule set. Imported once
+   here so every page gets it automatically; components reference semantic
+   class names only, never inline utility strings.
+
+   components.css is the "classic" design and applies by default. themes/
+   modern.css is a second design variation targeting the exact same class
+   names, scoped under [data-theme="modern"] so it only takes effect when
+   the admin's Theme page selects it — see app/layout.js, which reads the
+   selection from the database and sets data-theme on <html>. Both files
+   are always loaded; the attribute decides which one actually renders. */
+@import './components.css';
+@import './themes/modern.css';
+
 /* Fallback theme colors — overridden inline on <html> by app/layout.js
    with values from the admin Theme page (primary/secondary color). */
 :root {

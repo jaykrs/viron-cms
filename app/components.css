@@ -1,0 +1,499 @@
+/* ===========================================================================
+   Centralized component styles.
+
+   Every visual rule for the site's header, footer, cookie banner, and
+   content blocks (Hero, CTA, FeatureGrid, …) lives here as a semantic,
+   BEM-style class — nothing is styled with inline utility strings scattered
+   across component JSX. The .jsx files only ever reference a class name
+   from this sheet; the rule itself (and the Tailwind design tokens that
+   back it) is defined once, in one place, and can be changed here without
+   touching a single component file.
+
+   Shared primitives (buttons, form fields, the page gutter) are defined
+   first and reused with @apply so every block stays visually consistent.
+   =========================================================================== */
+
+/* ---------- Shared primitives ---------- */
+
+.u-container {
+  @apply max-w-content mx-auto px-6;
+}
+
+.u-section-border {
+  @apply border-b border-hairline;
+}
+
+.btn {
+  @apply inline-flex items-center text-sm font-medium transition-colors;
+}
+
+.btn-primary {
+  @apply btn border border-ink bg-ink px-5 py-3 text-paper hover:bg-signal hover:border-signal;
+}
+
+.btn-primary--inverted {
+  @apply btn border border-paper bg-paper px-5 py-3 text-ink hover:bg-signal hover:border-signal hover:text-paper shrink-0 w-fit;
+}
+
+.btn-outline {
+  @apply btn border border-hairline px-4 py-2 font-medium hover:border-ink;
+}
+
+.btn-outline--dark {
+  @apply btn border border-ink bg-ink text-paper px-4 py-2 font-medium hover:bg-signal hover:border-signal;
+}
+
+.btn-link {
+  @apply text-sm font-medium text-ink border-b border-ink pb-0.5 hover:text-signal hover:border-signal transition-colors;
+}
+
+.field-label {
+  @apply block text-sm text-slate mb-1.5;
+}
+
+.field-input {
+  @apply w-full border border-hairline px-4 py-2.5 bg-paper focus:border-ink outline-none;
+}
+
+.field-error {
+  @apply text-sm text-red-600;
+}
+
+/* ---------- Site header ---------- */
+
+.site-header {
+  @apply border-b border-hairline bg-paper/95 backdrop-blur sticky top-0 z-40;
+}
+
+.site-header__bar {
+  @apply u-container flex items-center justify-between h-16;
+}
+
+.site-header__logo {
+  @apply font-display text-lg font-bold tracking-tight text-ink;
+}
+
+.site-header__nav {
+  @apply hidden md:flex items-center gap-8;
+}
+
+.site-header__nav-link {
+  @apply text-[15px] text-slate hover:text-ink transition-colors;
+}
+
+.site-header__actions {
+  @apply hidden md:flex items-center gap-4;
+}
+
+.site-header__cta {
+  @apply btn rounded-none border border-ink bg-ink px-4 py-2 text-paper hover:bg-signal hover:border-signal;
+}
+
+.site-header__burger {
+  @apply md:hidden flex flex-col justify-center gap-1.5 w-8 h-8;
+}
+
+.site-header__burger-line {
+  @apply h-[2px] w-6 bg-ink transition-transform;
+}
+
+.site-header__burger-line--fade {
+  @apply h-[2px] w-6 bg-ink transition-opacity;
+}
+
+.site-header__mobile-menu {
+  @apply md:hidden border-t border-hairline bg-paper px-6 py-4 flex flex-col gap-4;
+}
+
+.site-header__mobile-link {
+  @apply text-ink;
+}
+
+.site-header__mobile-cta {
+  @apply btn w-fit border border-ink bg-ink px-4 py-2 text-paper;
+}
+
+.lang-switcher {
+  @apply border border-hairline bg-transparent text-sm text-slate hover:text-ink px-2 py-1.5 cursor-pointer outline-none focus:border-ink;
+}
+
+/* ---------- Site footer ---------- */
+
+.site-footer {
+  @apply bg-ink text-paper/90 mt-24;
+}
+
+.site-footer__grid {
+  @apply u-container py-16 grid grid-cols-2 md:grid-cols-4 gap-10;
+}
+
+.site-footer__brand {
+  @apply col-span-2 md:col-span-1;
+}
+
+.site-footer__brand-name {
+  @apply font-display text-lg font-bold text-paper;
+}
+
+.site-footer__brand-tagline {
+  @apply mt-3 text-sm text-paper/60 max-w-[220px];
+}
+
+.site-footer__col-heading {
+  @apply text-sm font-medium text-paper/50 mb-3;
+}
+
+.site-footer__list {
+  @apply space-y-2;
+}
+
+.site-footer__link {
+  @apply text-sm text-paper/80 hover:text-signal transition-colors;
+}
+
+.site-footer__bottom {
+  @apply border-t border-paper/10;
+}
+
+.site-footer__copyright {
+  @apply u-container py-6 text-xs text-paper/50;
+}
+
+/* ---------- Cookie consent banner ---------- */
+
+.cookie-consent {
+  @apply fixed bottom-0 left-0 right-0 z-50 border-t border-hairline bg-paper shadow-[0_-4px_16px_rgba(14,21,38,0.06)];
+}
+
+.cookie-consent__inner {
+  @apply u-container py-5;
+}
+
+.cookie-consent__row {
+  @apply flex flex-col md:flex-row md:items-center gap-4 md:justify-between;
+}
+
+.cookie-consent__text {
+  @apply text-sm text-slate max-w-xl;
+}
+
+.cookie-consent__actions {
+  @apply flex items-center gap-3 shrink-0;
+}
+
+.cookie-consent__form {
+  @apply flex flex-col md:flex-row md:items-center gap-3 md:justify-between;
+}
+
+.cookie-consent__form-text {
+  @apply text-sm text-slate;
+}
+
+.cookie-consent__form-fields {
+  @apply flex items-center gap-3;
+}
+
+.cookie-consent__input {
+  @apply border border-hairline px-3 py-2 text-sm outline-none focus:border-ink w-56;
+}
+
+.cookie-consent__submit {
+  @apply btn-outline--dark disabled:opacity-60 shrink-0;
+}
+
+.cookie-consent__error {
+  @apply text-xs text-red-600;
+}
+
+/* ---------- Block: unknown type (dev-only warning) ---------- */
+
+.block-unknown {
+  @apply u-container py-6 text-sm text-red-600;
+}
+
+/* ---------- Block: Hero ---------- */
+
+.block-hero {
+  @apply u-section-border;
+}
+
+.block-hero__inner {
+  @apply u-container py-20 md:py-28;
+}
+
+.block-hero__inner--with-image {
+  @apply grid md:grid-cols-[1fr_420px] gap-12 items-center;
+}
+
+.block-hero__content--full {
+  @apply max-w-[720px];
+}
+
+.block-hero__eyebrow {
+  @apply flex items-center gap-2 text-signal font-medium text-sm mb-5;
+}
+
+.block-hero__eyebrow-dash {
+  @apply inline-block w-4 h-[2px] bg-signal;
+}
+
+.block-hero__title {
+  @apply font-display text-4xl md:text-6xl font-bold leading-[1.08] text-ink text-balance;
+}
+
+.block-hero__subtitle {
+  @apply mt-6 text-lg text-slate leading-relaxed max-w-[600px];
+}
+
+.block-hero__ctas {
+  @apply mt-10 flex flex-wrap items-center gap-6;
+}
+
+.block-hero__image-wrap {
+  @apply border border-hairline;
+}
+
+.block-hero__image {
+  @apply w-full h-full object-cover aspect-[4/5] md:aspect-auto;
+}
+
+/* ---------- Block: CTA ---------- */
+
+.block-cta {
+  @apply relative bg-ink overflow-hidden;
+}
+
+.block-cta__bg {
+  @apply absolute inset-0 w-full h-full object-cover opacity-25;
+}
+
+.block-cta__inner {
+  @apply relative u-container py-16 flex flex-col md:flex-row md:items-center md:justify-between gap-8;
+}
+
+.block-cta__content {
+  @apply max-w-[520px];
+}
+
+.block-cta__heading {
+  @apply font-display text-2xl md:text-3xl font-bold text-paper;
+}
+
+.block-cta__subhead {
+  @apply mt-3 text-paper/70;
+}
+
+/* ---------- Block: FeatureGrid ---------- */
+
+.block-feature-grid {
+  @apply u-section-border;
+}
+
+.block-feature-grid__inner {
+  @apply u-container py-16;
+}
+
+.block-feature-grid__header {
+  @apply max-w-[560px] mb-12;
+}
+
+.block-feature-grid__heading {
+  @apply font-display text-2xl md:text-3xl font-bold text-ink;
+}
+
+.block-feature-grid__subheading {
+  @apply mt-3 text-slate;
+}
+
+.block-feature-grid__grid {
+  @apply grid md:grid-cols-2 gap-px bg-hairline border border-hairline;
+}
+
+.block-feature-grid__item {
+  @apply bg-paper h-full p-8 border-l-2 border-transparent hover:border-signal transition-colors;
+}
+
+.block-feature-grid__item-link {
+  @apply block;
+}
+
+.block-feature-grid__item-image {
+  @apply w-10 h-10 object-cover mb-4;
+}
+
+.block-feature-grid__item-title {
+  @apply font-display text-lg font-bold text-ink;
+}
+
+.block-feature-grid__item-desc {
+  @apply mt-3 text-sm text-slate leading-relaxed;
+}
+
+.block-feature-grid__item-more {
+  @apply mt-4 inline-block text-sm font-medium text-signal border-b border-signal;
+  border-bottom-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
+}
+
+/* ---------- Block: RichText ---------- */
+
+.block-rich-text {
+  @apply u-section-border;
+}
+
+.block-rich-text__inner {
+  @apply u-container py-16 grid md:grid-cols-[280px_1fr] gap-10;
+}
+
+.block-rich-text__heading {
+  @apply font-display text-2xl font-bold text-ink md:sticky md:top-24 self-start;
+}
+
+.block-rich-text__body {
+  @apply max-w-[640px] space-y-5;
+}
+
+.block-rich-text__paragraph {
+  @apply text-slate leading-relaxed;
+}
+
+/* ---------- Block: ServicesGrid ---------- */
+
+.block-services-grid {
+  @apply u-section-border;
+}
+
+.block-services-grid__inner {
+  @apply u-container py-16;
+}
+
+.block-services-grid__heading {
+  @apply font-display text-2xl md:text-3xl font-bold text-ink mb-10;
+}
+
+.block-services-grid__list {
+  @apply divide-y divide-hairline border-t border-b border-hairline;
+}
+
+/* "group" (for group-hover on the title below) must stay a literal Tailwind
+   utility class alongside this one in JSX — @apply can't absorb it. */
+.block-services-grid__item {
+  @apply flex flex-col md:flex-row md:items-center gap-3 md:gap-10 py-8 hover:bg-ink/[0.02] transition-colors px-2;
+}
+
+.block-services-grid__tag {
+  @apply font-mono text-xs text-amber shrink-0 md:w-32;
+}
+
+.block-services-grid__title {
+  @apply font-display text-xl font-bold text-ink shrink-0 md:w-72 group-hover:text-signal transition-colors;
+}
+
+.block-services-grid__desc {
+  @apply text-sm text-slate leading-relaxed;
+}
+
+/* ---------- Block: Stats ---------- */
+
+.block-stats {
+  @apply u-section-border;
+}
+
+.block-stats__grid {
+  @apply u-container py-12 grid grid-cols-2 md:grid-cols-4 gap-8;
+}
+
+.block-stats__value {
+  @apply font-display text-3xl md:text-4xl font-bold text-ink;
+}
+
+.block-stats__label {
+  @apply mt-1 text-sm text-slate;
+}
+
+/* ---------- Block: Testimonials ---------- */
+
+.block-testimonials {
+  @apply u-section-border;
+}
+
+.block-testimonials__inner {
+  @apply u-container py-16;
+}
+
+.block-testimonials__heading {
+  @apply font-display text-2xl md:text-3xl font-bold text-ink mb-10;
+}
+
+.block-testimonials__grid {
+  @apply grid md:grid-cols-3 gap-10;
+}
+
+.block-testimonials__item {
+  @apply border-l-2 border-hairline pl-5;
+}
+
+.block-testimonials__quote {
+  @apply text-ink leading-relaxed;
+}
+
+.block-testimonials__footer {
+  @apply mt-4 flex items-center gap-3 text-sm text-slate;
+}
+
+.block-testimonials__avatar {
+  @apply w-9 h-9 rounded-full object-cover shrink-0;
+}
+
+.block-testimonials__name {
+  @apply font-medium text-ink;
+}
+
+/* ---------- Block: ContactForm ---------- */
+
+.block-contact-form__inner {
+  @apply u-container py-16 grid md:grid-cols-2 gap-16;
+}
+
+.block-contact-form__heading {
+  @apply font-display text-2xl md:text-3xl font-bold text-ink;
+}
+
+.block-contact-form__subheading {
+  @apply mt-3 text-slate max-w-[420px];
+}
+
+.block-contact-form__details {
+  @apply mt-10 space-y-4 text-sm;
+}
+
+.block-contact-form__details-label {
+  @apply text-slate;
+}
+
+.block-contact-form__details-value {
+  @apply text-ink font-medium;
+}
+
+.block-contact-form__success {
+  @apply border border-hairline p-8;
+}
+
+.block-contact-form__success-title {
+  @apply font-display text-lg font-bold text-ink;
+}
+
+.block-contact-form__success-body {
+  @apply mt-2 text-sm text-slate;
+}
+
+.block-contact-form__form {
+  @apply space-y-5;
+}
+
+.block-contact-form__recaptcha-hint {
+  @apply text-xs text-slate;
+}
+
+.block-contact-form__submit {
+  @apply btn-primary disabled:opacity-50;
+}

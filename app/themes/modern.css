@@ -1,0 +1,274 @@
+/* ===========================================================================
+   "Modern" design theme.
+
+   Same component contract as the default ("classic") theme in
+   ../components.css — every rule here targets the exact same semantic
+   class names (site-header, block-hero__title, cookie-consent__input, …).
+   Nothing in the component JSX changes between themes; only the look does.
+
+   Activated by setting `data-theme="modern"` on <html> (done in
+   app/layout.js from the admin-controlled theme setting), which is why
+   every selector below is scoped with the `[data-theme="modern"]` prefix —
+   the attribute makes these rules more specific than the unscoped classic
+   rules, so they win automatically when this theme is selected, with no
+   change needed to components.css itself.
+
+   Design direction: bolder and more playful than the classic editorial
+   look — rounded cards, soft shadows, a gradient accent built from the
+   admin's primary/secondary theme colors, and pill-shaped buttons.
+   =========================================================================== */
+
+[data-theme='modern'] body {
+  @apply bg-[#F7F7FB];
+}
+
+/* ---------- Shared primitives ---------- */
+
+[data-theme='modern'] .btn {
+  @apply rounded-full font-semibold;
+}
+
+[data-theme='modern'] .btn-primary {
+  @apply rounded-full border-0 px-6 py-3.5 text-paper shadow-lg shadow-ink/10 transition-transform hover:scale-[1.03] hover:shadow-xl;
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+[data-theme='modern'] .btn-primary--inverted {
+  @apply rounded-full border-0 bg-paper px-6 py-3.5 text-ink shadow-lg transition-transform hover:scale-[1.03] hover:text-paper;
+  background-image: none;
+}
+[data-theme='modern'] .btn-primary--inverted:hover {
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+[data-theme='modern'] .btn-outline {
+  @apply rounded-full border-2 border-ink/10 px-5 py-2.5 hover:border-ink/30 hover:bg-ink/[0.03];
+}
+
+[data-theme='modern'] .btn-outline--dark {
+  @apply rounded-full border-0 px-5 py-2.5 text-paper shadow-md transition-transform hover:scale-[1.03];
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+[data-theme='modern'] .btn-link {
+  @apply rounded-full border-0 pb-0 text-signal hover:text-ink;
+}
+
+[data-theme='modern'] .field-label {
+  @apply font-medium text-ink;
+}
+
+[data-theme='modern'] .field-input {
+  @apply rounded-2xl border-2 border-ink/10 bg-ink/[0.02] px-5 py-3.5 transition-colors focus:border-signal focus:bg-paper;
+}
+
+/* ---------- Site header ---------- */
+
+[data-theme='modern'] .site-header {
+  @apply sticky top-3 z-40 mx-4 rounded-3xl border-0 bg-paper/80 shadow-lg shadow-ink/5 backdrop-blur-xl md:mx-8;
+}
+
+[data-theme='modern'] .site-header__bar {
+  @apply h-[72px] px-6;
+}
+
+[data-theme='modern'] .site-header__logo {
+  @apply text-xl tracking-tight;
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+[data-theme='modern'] .site-header__nav-link {
+  @apply rounded-full px-1 font-medium hover:text-signal;
+}
+
+[data-theme='modern'] .site-header__cta {
+  @apply btn-primary rounded-full border-0 px-5 py-2.5 text-sm shadow-md;
+}
+
+[data-theme='modern'] .site-header__mobile-menu {
+  @apply mx-4 mb-4 rounded-3xl border-0 bg-paper shadow-xl;
+}
+
+[data-theme='modern'] .lang-switcher {
+  @apply rounded-full border-2 border-ink/10 px-3 py-2;
+}
+
+/* ---------- Site footer ---------- */
+
+[data-theme='modern'] .site-footer {
+  @apply mx-4 mb-4 mt-20 rounded-[2.5rem] md:mx-8;
+  background-image: radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--color-primary) 35%, #0E1526) 0%, #0E1526 55%);
+}
+
+[data-theme='modern'] .site-footer__bottom {
+  @apply border-paper/10;
+}
+
+/* ---------- Cookie consent banner ---------- */
+
+[data-theme='modern'] .cookie-consent {
+  @apply inset-x-4 bottom-4 left-auto right-auto z-50 w-auto max-w-3xl rounded-3xl border-0 shadow-2xl shadow-ink/10 md:left-1/2 md:-translate-x-1/2;
+}
+
+[data-theme='modern'] .cookie-consent__inner {
+  @apply px-8 py-6;
+}
+
+[data-theme='modern'] .cookie-consent__input {
+  @apply field-input w-56 py-2.5;
+}
+
+[data-theme='modern'] .cookie-consent__submit {
+  @apply btn-outline--dark;
+}
+
+/* ---------- Block: unknown type ---------- */
+
+[data-theme='modern'] .block-unknown {
+  @apply my-6 rounded-2xl bg-red-50;
+}
+
+/* ---------- Block: Hero ---------- */
+
+[data-theme='modern'] .block-hero {
+  @apply relative overflow-hidden border-0 pt-6;
+}
+[data-theme='modern'] .block-hero::before {
+  content: '';
+  @apply absolute -top-40 right-[-10%] h-[520px] w-[520px] rounded-full opacity-20 blur-3xl;
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+[data-theme='modern'] .block-hero__inner {
+  @apply relative py-16 md:py-24;
+}
+
+[data-theme='modern'] .block-hero__eyebrow {
+  @apply w-fit rounded-full bg-ink/5 px-4 py-1.5 text-signal;
+}
+
+[data-theme='modern'] .block-hero__eyebrow-dash {
+  @apply hidden;
+}
+
+[data-theme='modern'] .block-hero__title {
+  @apply tracking-tight;
+}
+
+[data-theme='modern'] .block-hero__image-wrap {
+  @apply rounded-[2rem] border-0 shadow-2xl shadow-ink/10 ring-1 ring-ink/5;
+}
+
+/* ---------- Block: CTA ---------- */
+
+[data-theme='modern'] .block-cta {
+  @apply mx-4 my-16 rounded-[2.5rem] md:mx-8;
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+}
+
+[data-theme='modern'] .block-cta__inner {
+  @apply py-14;
+}
+
+/* ---------- Block: FeatureGrid ---------- */
+
+[data-theme='modern'] .block-feature-grid {
+  @apply border-0;
+}
+
+[data-theme='modern'] .block-feature-grid__heading {
+  @apply tracking-tight;
+}
+
+[data-theme='modern'] .block-feature-grid__grid {
+  @apply gap-6 border-0 bg-transparent;
+}
+
+[data-theme='modern'] .block-feature-grid__item {
+  @apply h-full rounded-3xl border-0 border-l-0 bg-paper p-8 shadow-md shadow-ink/5 transition-all hover:-translate-y-1 hover:shadow-xl;
+}
+
+[data-theme='modern'] .block-feature-grid__item-image {
+  @apply mb-5 h-12 w-12 rounded-2xl;
+}
+
+[data-theme='modern'] .block-feature-grid__item-more {
+  @apply rounded-full border-0 bg-ink/5 px-3 py-1 text-xs text-signal;
+}
+
+/* ---------- Block: RichText ---------- */
+
+[data-theme='modern'] .block-rich-text {
+  @apply border-0;
+}
+
+/* ---------- Block: ServicesGrid ---------- */
+
+[data-theme='modern'] .block-services-grid {
+  @apply border-0;
+}
+
+[data-theme='modern'] .block-services-grid__list {
+  @apply space-y-4 border-0;
+}
+
+[data-theme='modern'] .block-services-grid__item {
+  @apply rounded-3xl border-0 bg-paper px-6 py-7 shadow-sm shadow-ink/5 transition-all hover:-translate-y-0.5 hover:shadow-lg;
+}
+
+[data-theme='modern'] .block-services-grid__tag {
+  @apply rounded-full bg-ink/5 px-3 py-1 text-amber;
+}
+
+/* ---------- Block: Stats ---------- */
+
+[data-theme='modern'] .block-stats {
+  @apply border-0;
+}
+
+[data-theme='modern'] .block-stats__grid {
+  @apply gap-4;
+}
+
+[data-theme='modern'] .block-stats__grid > div {
+  @apply rounded-3xl bg-paper p-6 text-center shadow-sm shadow-ink/5;
+}
+
+[data-theme='modern'] .block-stats__value {
+  background-image: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Block: Testimonials ---------- */
+
+[data-theme='modern'] .block-testimonials {
+  @apply border-0;
+}
+
+[data-theme='modern'] .block-testimonials__item {
+  @apply rounded-3xl border-0 bg-paper p-8 shadow-md shadow-ink/5;
+}
+
+[data-theme='modern'] .block-testimonials__avatar {
+  @apply ring-2 ring-paper shadow;
+}
+
+/* ---------- Block: ContactForm ---------- */
+
+[data-theme='modern'] .block-contact-form__heading {
+  @apply tracking-tight;
+}
+
+[data-theme='modern'] .block-contact-form__success,
+[data-theme='modern'] .block-contact-form__form {
+  @apply rounded-[2rem] border-0 bg-paper p-8 shadow-xl shadow-ink/5;
+}
+
+[data-theme='modern'] .block-contact-form__submit {
+  @apply w-full justify-center;
+}

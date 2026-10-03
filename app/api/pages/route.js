@@ -5,7 +5,8 @@ import { jsonError, requireAuth } from '../../../lib/server/routeHelpers';
 export async function GET(request) {
   try {
     requireAuth(request);
-    return NextResponse.json(await listPages());
+    const locale = new URL(request.url).searchParams.get('locale') || undefined;
+    return NextResponse.json(await listPages({ locale }));
   } catch (err) {
     return jsonError(err);
   }

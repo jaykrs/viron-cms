@@ -34,6 +34,7 @@ export default function ThemePage() {
       const updated = await updateTheme({
         primaryColor: theme.primaryColor,
         secondaryColor: theme.secondaryColor,
+        cssTheme: theme.cssTheme,
         defaultHeaderId: theme.defaultHeaderId ? Number(theme.defaultHeaderId) : null,
         defaultFooterId: theme.defaultFooterId ? Number(theme.defaultFooterId) : null,
       });
@@ -64,6 +65,35 @@ export default function ThemePage() {
       )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-8">
+        <section className="space-y-4">
+          <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">Design</h2>
+          <p className="text-xs text-slate -mt-2">
+            Switches the stylesheet the whole public site renders with. Both designs use the same pages and
+            content — only the look changes, instantly, with no republishing.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { value: 'classic', label: 'Classic', blurb: 'Flat, editorial — hairline borders, square corners.' },
+              { value: 'modern', label: 'Modern', blurb: 'Rounded cards, soft shadows, gradient accents.' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => set('cssTheme', opt.value)}
+                className={`text-left border px-4 py-3 transition-colors ${
+                  theme.cssTheme === opt.value ? 'border-ink bg-ink/[0.03]' : 'border-hairline hover:border-ink/40'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-display font-bold text-ink">{opt.label}</span>
+                  {theme.cssTheme === opt.value && <span className="text-xs text-signal">Active</span>}
+                </div>
+                <p className="mt-1 text-xs text-slate">{opt.blurb}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className="space-y-4">
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">Colors</h2>
           <div className="grid grid-cols-2 gap-6">

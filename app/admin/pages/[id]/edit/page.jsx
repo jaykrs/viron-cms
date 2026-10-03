@@ -9,8 +9,12 @@ import {
   publishPage,
   unpublishPage,
   listComponents,
+  listLocales,
+  listPageTranslations,
+  createPageTranslation,
 } from '../../../../../lib/api';
 import BlockEditor from '../../../../../components/admin/BlockEditor';
+import { DEFAULT_LOCALE } from '../../../../../lib/localeCatalog';
 
 export default function EditPage() {
   const { id } = useParams();
@@ -18,22 +22,41 @@ export default function EditPage() {
   const [page, setPage] = useState(null);
   const [headers, setHeaders] = useState([]);
   const [footers, setFooters] = useState([]);
+  const [locales, setLocales] = useState([]);
+  const [translations, setTranslations] = useState([]);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(null);
 
   async function load() {
     try {
-      const [p, h, f] = await Promise.all([
+      const [p, h, f, l, t] = await Promise.all([
         getPage(id),
         listComponents('header'),
         listComponents('footer'),
+        listLocales(),
+        listPageTranslations(id),
       ]);
       setPage(p);
       setHeaders(h);
       setFooters(f);
+      setLocales(l.enabled);
+      setTranslations(t);
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  async function handleTranslate(locale) {
+    setTranslating(locale);
+    setError(null);
+    try {
+      const created = await createPageTranslation(id, locale);
+      router.push(`/admin/pages/${created.id}/edit`);
+    } catch (err) {
+      setError(err.message);
+      setTranslating(null);
     }
   }
 
@@ -109,7 +132,10 @@ export default function EditPage() {
         <div>
           <h1 className="font-display text-2xl font-bold text-ink">{page.title}</h1>
           <div className="mt-1 flex items-center gap-2 text-xs">
-            <span className="font-mono text-slate">/{page.slug}</span>
+            <span className="font-mono text-slate">
+              {page.locale !== DEFAULT_LOCALE ? `/${page.locale}` : ''}/{page.slug}
+            </span>
+            <span className="px-2 py-0.5 font-medium bg-ink/5 text-ink uppercase">{page.locale}</span>
             <span
               className={`px-2 py-0.5 font-medium ${
                 page.status === 'published' ? 'bg-green-50 text-green-700' : 'bg-amber/10 text-amber'
@@ -208,6 +234,45 @@ export default function EditPage() {
             </label>
           </div>
         </section>
+
+        {locales.length > 1 && (
+          <section className="space-y-4">
+            <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">Translations</h2>
+            <div className="border border-hairline bg-paper divide-y divide-hairline">
+              {locales.map((l) => {
+                const existing = translations.find((t) => t.locale === l.code);
+                const isCurrent = l.code === page.locale;
+                return (
+                  <div key={l.code} className="flex items-center justify-between px-4 py-3 text-sm">
+                    <div>
+                      <span className="font-medium text-ink">{l.label}</span>
+                      <span className="ml-2 font-mono text-xs text-slate uppercase">{l.code}</span>
+                      {isCurrent && <span className="ml-2 text-xs text-slate">· this page</span>}
+                    </div>
+                    {isCurrent ? null : existing ? (
+                      <Link href={`/admin/pages/${existing.id}/edit`} className="text-xs text-signal hover:underline">
+                        Edit ({existing.status})
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={translating === l.code}
+                        onClick={() => handleTranslate(l.code)}
+                        className="text-xs text-signal hover:underline disabled:opacity-50"
+                      >
+                        {translating === l.code ? 'Creating…' : `Create ${l.label} translation`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-slate">
+              Creating a translation copies this page&apos;s blocks, header/footer, and SEO as a starting point —
+              it is saved as a new draft page for you to translate.
+            </p>
+          </section>
+        )}
 
         <section className="space-y-4">
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">SEO & metadata</h2>

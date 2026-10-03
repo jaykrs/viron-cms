@@ -30,6 +30,55 @@ headers). One codebase, one source of truth for the data logic, two ways of
 reaching it depending on whether the caller is server-side render or
 browser-side fetch.
 
+## Centralized CSS (no inline styling in components)
+
+The public site's header, footer, cookie banner, and every content block
+(Hero, CTA, FeatureGrid, …) reference semantic class names only —
+`site-header`, `block-hero__title`, `cookie-consent__input`, and so on.
+None of their JSX carries long inline Tailwind utility strings. Every one
+of those classes is defined exactly once, in `app/components.css`, using
+Tailwind's `@apply` to compose the utilities — so the visual styling is
+centralized in one file instead of scattered across component code, while
+still getting Tailwind's design tokens (the `signal`/`amber` theme colors,
+spacing scale, etc.) for free. `app/components.css` is imported once from
+`app/globals.css`, so it's loaded at the page/layout level and available
+everywhere automatically — no per-component import needed.
+
+To restyle a block, edit its rules in `app/components.css`; you don't need
+to touch the component file at all unless you're changing markup. The
+admin console's own screens (the dashboard pages under `app/admin/**` and
+the authoring widgets in `components/admin/`) are internal tooling rather
+than site "components" and still use Tailwind utility classes directly —
+ask if you'd like those centralized the same way too.
+
+### A second design, switchable from the admin Theme page
+
+`app/themes/modern.css` is a second, visually distinct stylesheet — rounded
+cards, soft shadows, a gradient accent built from the site's primary/
+secondary colors, pill-shaped buttons — that targets the **exact same**
+class names as `app/components.css`. No component or page markup changes
+between the two designs; only the CSS does.
+
+Both stylesheets are always loaded. Which one actually renders is decided
+by a `data-theme="classic" | "modern"` attribute on `<html>`
+(`app/layout.js`), set from a `cssTheme` column on `theme_settings` — the
+same table that already holds the primary/secondary colors. Every rule in
+`modern.css` is scoped under `[data-theme='modern']`, so its selectors are
+more specific than the unscoped classic ones and win automatically the
+moment that attribute is set; there's no JavaScript theme-switching logic
+at all, just a server-rendered attribute.
+
+**To switch it**: open `/admin/theme` → **Design** → pick Classic or
+Modern → Save. It takes effect immediately, site-wide, with no rebuild —
+the same `PUT /api/theme` endpoint used for colors now also accepts
+`{ "cssTheme": "modern" }`. The selection travels with the site's
+export/import bundle, same as the colors.
+
+**To add a third design**: create `app/themes/<name>.css` with the same
+class names scoped under `[data-theme='<name>']`, import it from
+`globals.css`, add `'<name>'` to `CSS_THEMES` in `lib/server/theme.js`, and
+add it as an option in `app/admin/theme/page.jsx`'s design picker.
+
 ## Project layout
 
 ```
@@ -39,6 +88,13 @@ app/
                            calls lib/server/pages.js directly (no fetch)
   sitemap.js               machine-readable /sitemap.xml
   sitemap/page.jsx         human-readable /sitemap page
+  globals.css              Tailwind entrypoint + base styles; imports components.css
+                           and themes/modern.css
+  components.css           "classic" design — centralized semantic CSS for the
+                           header, footer, cookie banner, and every content block
+  themes/
+    modern.css             "modern" design — same class names as components.css,
+                           scoped under [data-theme='modern'] (see section above)
   api/
     auth/login/route.js
     auth/password/route.js            change password (logged-in user)
@@ -58,18 +114,28 @@ app/
     visitors/track/route.js           page-view tracking (public, no-ops
                                        silently for an unknown visitor)
     visitors/[id]/route.js            visitor journey (auth) / delete (auth)
+    contact/route.js                  contact form: submit (public POST, verifies
+                                       reCAPTCHA if configured) / widget config (public GET)
+    contact-submissions/route.js      admin inbox: list + filter/search (auth)
+    contact-submissions/[id]/route.js get / update status / delete (auth)
     graphql/route.js                  GraphQL endpoint: queries public, mutations need a token
     graphql/schema/route.js           schema as SDL (public)
     content-models/route.js           admin REST for models (auth) — same service layer as GraphQL
     content-models/[id]/route.js
     content-fragments/route.js        admin REST for fragments (auth)
     content-fragments/[id]/route.js
+    locales/route.js                  enabled languages: list (public) / enable (auth)
+    locales/[code]/route.js           disable a language (auth)
+    pages/[id]/translations/route.js  sibling pages in other languages (auth)
+    pages/[id]/translate/route.js     create a draft translation (auth)
     export/route.js                   full site content bundle (auth)
     import/route.js                   restore/merge a bundle (auth)
   admin/                   admin console (pages list, editor, header/footer
                            library, assets, theme, visitors, export/import,
                            settings) — client components calling /api/*
 lib/
+  localeCatalog.js  the fixed language catalog + default-locale constant (plain
+                    data, importable from both server code and admin client pages)
   server/
     db.js         libSQL schema + connection (local file or Turso)
     cache.js       Redis-or-memory cache abstraction
@@ -80,8 +146,11 @@ lib/
     theme.js        site theme (colors + default header/footer)
     assets.js       image upload/list/delete (disk + DB record)
     visitors.js     cookie-consent capture + page-view analytics ("journey")
+    contactSubmissions.js contact form submissions: validate, store, list/filter, status, delete
+    recaptcha.js    Google reCAPTCHA v2 server-side verification (no-op if unconfigured)
     contentFragments.js content models (schemas), fragments, validation, querying
     graphql.js      dynamic GraphQL schema built from the models; request execution
+    locales.js      enabled-languages service (list/enable/disable)
     exportImport.js assembles/restores the full site content bundle
     errors.js       shared ApiError class
     routeHelpers.js shared error handling + auth guard for route handlers
@@ -94,8 +163,10 @@ components/
   CTA, FeatureGrid, Testimonials), admin/ (block editor, asset picker modal,
   ModelEditor schema builder, FragmentForm schema-driven form)
 scripts/
-  seed.js         seeds the Vireon Labs demo content, admin user, and theme
-                  defaults
+  seed.js         seeds the Vireon Labs demo content, admin user, theme
+                  defaults, and a French translation of Home and About
+                  (with its own translated header/footer) to demonstrate
+                  the multilingual feature out of the box
 db/
   cms.db          local libSQL database file (created by the seed script;
                   unused if TURSO_DATABASE_URL points at a real Turso db)
@@ -181,6 +252,42 @@ page-view history entirely (e.g. for an erasure request).
 > your data retention, and this feature as a whole actually comply with
 > whatever privacy law applies to you (GDPR, CCPA, etc.) — that's a product
 > and legal decision, not something a default implementation can cover.
+
+### Contact form submissions & reCAPTCHA
+
+The `ContactForm` block (`components/blocks/ContactForm.jsx`) is wired to a
+real backend, not a client-side-only demo:
+
+- Submitting the form POSTs to the public `/api/contact` endpoint, which
+  validates the fields and writes a row to the `contact_submissions` table
+  (`lib/server/contactSubmissions.js`) — name, email, message, the page it
+  was sent from, and its locale.
+- `/admin/contact-submissions` lists every submission (filterable by
+  read/unread status, searchable by name/email/message), with mark-as-
+  read/unread and delete actions. `/admin/contact-submissions/[id]` shows
+  the full message and auto-marks it read on open.
+- Submissions are intentionally excluded from the site export/import
+  bundle, for the same reason visitor analytics is — it's visitor-submitted
+  data captured from the live site, not admin-authored content you'd want
+  to carry between environments.
+
+**Google reCAPTCHA (v2 checkbox)** guards the public form against spam, and
+degrades gracefully like the app's other optional services (Redis, Turso):
+with no keys set, the form works exactly as before, with no widget and no
+verification step. To turn it on:
+
+1. Register a reCAPTCHA v2 ("I'm not a robot" checkbox) site at
+   https://www.google.com/recaptcha/admin for `localhost` (and your real
+   domain, if deploying).
+2. Add both keys to `.env.local`:
+   ```
+   NEXT_PUBLIC_RECAPTCHA_SITE_KEY=your-site-key
+   RECAPTCHA_SECRET_KEY=your-secret-key
+   ```
+3. Restart the dev server. The contact form now renders the checkbox widget
+   and `/api/contact` rejects submissions with a missing or invalid token
+   (verified server-side against Google's `siteverify` endpoint in
+   `lib/server/recaptcha.js`).
 
 ### Content fragments & GraphQL (AEM-style structured content)
 
@@ -274,6 +381,9 @@ background, etc. without leaving the page editor.
 ### Theme (centralized primary/secondary color + default layout)
 
 `/admin/theme` (admin-only) sets:
+- **Design** — switches the whole site between the `classic` and `modern`
+  stylesheets (`cssTheme` in `theme_settings`) — see "A second design,
+  switchable from the admin Theme page" above.
 - **Primary / secondary color** — stored as hex values in `theme_settings`
   and injected as CSS custom properties (`--color-primary`,
   `--color-secondary`) on `<html>` in `app/layout.js`, read directly from
@@ -294,6 +404,61 @@ background, etc. without leaving the page editor.
 (`PUT /api/auth/password`, verified against the current password before
 accepting a new one — demo-grade plaintext comparison, see the production
 notes below).
+
+### Multilingual pages
+
+English is the fixed default language, always served at the site root with
+no URL prefix (`/about`). Every other language you enable (`/admin/languages`)
+gets its own prefix — e.g. French lives at `/fr/about` — and shows up in a
+language switcher in the header.
+
+- **Data model**: `pages.locale` (default `'en'`), with the uniqueness
+  constraint on `(locale, slug)` instead of `slug` alone. A "translation" of
+  a page is simply another row with the **same slug**, a different
+  `locale` — that shared slug is what the switcher and hreflang tags use to
+  find the sibling pages. A slug can't start with a language code (e.g.
+  `fr`, `fr/anything`) — that's rejected at creation/update time, since it
+  would be indistinguishable from a locale-prefixed URL.
+- **Resolving a URL**: `app/[[...slug]]/page.jsx` checks whether the first
+  path segment is an *enabled* language code; if so that's the locale and
+  the rest of the path is the page's slug, otherwise the whole path is the
+  slug under English. `resolvePublicPage(locale, segments)` in
+  `lib/server/pages.js` then tries that locale first and, if nothing
+  matches, **falls back to the English version of the same slug** rather
+  than 404ing — so a URL like `/fr/contact` still renders (in English) even
+  before anyone has translated that particular page. The response says
+  which locale was actually served (`resolvedLocale`) versus requested
+  (`requestedLocale`), in case a caller wants to tell the two apart.
+- **Links stay inside the language the visitor is browsing**: every
+  internal link field across every block, header, and footer schema is
+  named exactly `href`, so `localizeHrefs()` in
+  `components/ComponentRenderer.jsx` walks a props tree and prefixes any
+  `href` starting with `/` with the current (requested) locale — external
+  URLs, `mailto:`, and already-prefixed paths are left alone. This runs
+  server-side before anything reaches Header/Footer/blocks, so a page that's
+  falling back to English content still links to `/fr/...` elsewhere on the
+  site rather than dropping the visitor back into the English section.
+- **Translating a page**: open a page in `/admin/pages/[id]/edit` — the
+  Translations panel lists every enabled language and offers "Create X
+  translation" for any that don't have one yet. That copies the current
+  page's blocks, header/footer, and SEO into a new **draft** page with the
+  same slug under the target locale, ready to translate; publishing it is
+  what makes `resolvePublicPage` start serving it instead of the English
+  fallback. A header/footer is assigned per page like anywhere else in this
+  CMS, so a translated page can (and in the seed, does) use its own
+  translated header/footer component instead of inheriting the English one.
+- **SEO**: `generateMetadata` adds `alternates.languages` (hreflang tags)
+  for every *published* sibling translation of a static page, plus
+  `openGraph.locale`. `/sitemap.xml` and the human `/sitemap` page both list
+  every published page in every language it exists in (the human one shows
+  a small language badge next to non-English entries).
+- **Admin**: `/admin/languages` enables/disables languages from a fixed
+  catalog (`lib/localeCatalog.js`) — English can't be removed, and a
+  language with pages still using it can't be removed either. The page
+  list, the new-page form, and the page editor all show/filter by language.
+- **Export/import**: each page's `locale` travels in the export bundle,
+  along with the list of enabled languages (re-enabled automatically on
+  import) — format version 3.
 
 ### Sitemap
 
@@ -352,6 +517,8 @@ Optional env vars (`.env.local`):
 - Public site: `http://localhost:3000`
 - Admin console: `http://localhost:3000/admin`
 - Dynamic route demo: `http://localhost:3000/solutions/<anything>`
+- French demo: `http://localhost:3000/fr` and `http://localhost:3000/fr/about`
+  (seeded translations), or the language switcher in the header
 
 ### Production build
 

@@ -12,7 +12,9 @@ const NAV = [
   { href: '/admin/graphql', label: 'GraphQL' },
   { href: '/admin/assets', label: 'Assets' },
   { href: '/admin/theme', label: 'Theme' },
+  { href: '/admin/languages', label: 'Languages' },
   { href: '/admin/visitors', label: 'Visitors' },
+  { href: '/admin/contact-submissions', label: 'Contact submissions' },
   { href: '/admin/export-import', label: 'Export & import' },
   { href: '/admin/settings', label: 'Settings' },
 ];

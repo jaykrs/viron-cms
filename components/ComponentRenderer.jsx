@@ -6,6 +6,7 @@ import Stats from './blocks/Stats';
 import Testimonials from './blocks/Testimonials';
 import CTA from './blocks/CTA';
 import ContactForm from './blocks/ContactForm';
+import { DEFAULT_LOCALE } from '../lib/localeCatalog';
 
 const REGISTRY = {
   hero: Hero,
@@ -41,20 +42,47 @@ function substitute(value, params) {
   return value;
 }
 
-export function renderBlocks(blocks = [], params = {}) {
+// Every internal link field across every block, header, and footer schema
+// is named exactly "href" — nothing else is, so rewriting every "href" key
+// found anywhere in a props tree is both simple and precise. External URLs
+// (https://…), protocol-relative (//…), and non-path values (mailto:, tel:,
+// empty) are left untouched; a path already prefixed with an enabled
+// locale code is left alone too, so this is safe to apply more than once.
+export function localizeHref(href, locale, enabledCodes = []) {
+  if (typeof href !== 'string' || !href.startsWith('/') || href.startsWith('//')) return href;
+  if (!locale || locale === DEFAULT_LOCALE) return href;
+  const firstSegment = href.split('/')[1] || '';
+  if (enabledCodes.includes(firstSegment)) return href;
+  return href === '/' ? `/${locale}` : `/${locale}${href}`;
+}
+
+export function localizeHrefs(value, locale, enabledCodes = []) {
+  if (Array.isArray(value)) return value.map((v) => localizeHrefs(v, locale, enabledCodes));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [
+        k,
+        k === 'href' ? localizeHref(v, locale, enabledCodes) : localizeHrefs(v, locale, enabledCodes),
+      ])
+    );
+  }
+  return value;
+}
+
+export function renderBlocks(blocks = [], params = {}, locale = DEFAULT_LOCALE, enabledCodes = []) {
   return blocks.map((block) => {
     const Component = REGISTRY[block.type];
     if (!Component) {
       if (process.env.NODE_ENV !== 'production') {
         return (
-          <div key={block.id} className="max-w-content mx-auto px-6 py-6 text-sm text-red-600">
+          <div key={block.id} className="block-unknown">
             Unknown block type: {block.type}
           </div>
         );
       }
       return null;
     }
-    const props = substitute(block.props, params);
+    const props = localizeHrefs(substitute(block.props, params), locale, enabledCodes);
     return <Component key={block.id} {...props} />;
   });
 }

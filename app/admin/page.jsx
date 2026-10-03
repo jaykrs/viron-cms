@@ -2,16 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { listPages, publishPage, unpublishPage, deletePage } from '../../lib/api';
+import { listPages, publishPage, unpublishPage, deletePage, listLocales } from '../../lib/api';
+import { DEFAULT_LOCALE } from '../../lib/localeCatalog';
 
 export default function AdminDashboard() {
   const [pages, setPages] = useState(null);
+  const [locales, setLocales] = useState([]);
+  const [localeFilter, setLocaleFilter] = useState('');
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
 
   async function load() {
     try {
-      setPages(await listPages());
+      const [p, l] = await Promise.all([listPages(), listLocales()]);
+      setPages(p);
+      setLocales(l.enabled);
     } catch (err) {
       setError(err.message);
     }
@@ -47,6 +52,8 @@ export default function AdminDashboard() {
     }
   }
 
+  const visible = (pages || []).filter((p) => !localeFilter || p.locale === localeFilter);
+
   return (
     <div className="max-w-5xl mx-auto px-8 py-10">
       <div className="flex items-center justify-between mb-8">
@@ -64,29 +71,50 @@ export default function AdminDashboard() {
 
       {error && <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">{error}</div>}
 
+      {locales.length > 1 && (
+        <div className="mb-4 flex items-center gap-3">
+          <select
+            value={localeFilter}
+            onChange={(e) => setLocaleFilter(e.target.value)}
+            className="border border-hairline px-3 py-2 text-sm bg-paper"
+          >
+            <option value="">All languages</option>
+            {locales.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {!pages ? (
         <p className="text-sm text-slate">Loading…</p>
-      ) : pages.length === 0 ? (
+      ) : visible.length === 0 ? (
         <p className="text-sm text-slate">No pages yet. Create your first page to get started.</p>
       ) : (
         <div className="border border-hairline bg-paper">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-3 text-xs text-slate border-b border-hairline">
+          <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 px-5 py-3 text-xs text-slate border-b border-hairline">
             <span>Page</span>
+            <span>Language</span>
             <span>Route</span>
             <span>Status</span>
             <span className="text-right">Actions</span>
           </div>
-          {pages.map((page) => (
+          {visible.map((page) => (
             <div
               key={page.id}
-              className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-center px-5 py-4 border-b border-hairline last:border-b-0"
+              className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 items-center px-5 py-4 border-b border-hairline last:border-b-0"
             >
               <div>
                 <Link href={`/admin/pages/${page.id}/edit`} className="font-medium text-ink hover:text-signal">
                   {page.title}
                 </Link>
-                <div className="text-xs text-slate mt-0.5 font-mono">/{page.slug}</div>
+                <div className="text-xs text-slate mt-0.5 font-mono">
+                  {page.locale !== DEFAULT_LOCALE ? `/${page.locale}` : ''}/{page.slug}
+                </div>
               </div>
+              <span className="text-xs font-mono uppercase text-slate">{page.locale}</span>
               <span className="text-xs text-slate">{page.route_type}</span>
               <span
                 className={`text-xs font-medium px-2 py-1 w-fit ${
