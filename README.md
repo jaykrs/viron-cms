@@ -184,9 +184,13 @@ public/
   `/solutions/healthcare` — one page record serves unlimited URLs, with
   `{{industrySlug}}` tokens in any block's text substituted at render time.
 - **Component authoring (header/footer per page)**: headers/footers are
-  reusable `components` (kind `header` / `footer`) with JSON props, editable
-  at `/admin/components`. Each page picks one of each — or leaves it as
-  "Use theme default" to inherit the site-wide default (see Theme, below).
+  reusable `components` (kind `header` / `footer`) with JSON props.
+  `/admin/components` lists them; clicking one opens its own detail page
+  (`/admin/components/[id]`, with a "← Back to header & footer" link) to
+  edit its name/props or delete it — deleting is blocked with a clear error
+  if the component is still assigned to a page or is the theme's default.
+  Each page picks one of each — or leaves it as "Use theme default" to
+  inherit the site-wide default (see Theme, below).
 - **Page authoring**: each page has an ordered list of content blocks,
   authored in the admin editor as JSON props with add / reorder / remove.
   8 block types are registered (hero, rich text, feature grid, services

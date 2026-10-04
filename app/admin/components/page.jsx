@@ -1,72 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { listComponents, updateComponent, createComponent } from '../../../lib/api';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { listComponents, createComponent } from '../../../lib/api';
 
-function ComponentCard({ component, onSaved }) {
-  const [text, setText] = useState(JSON.stringify(component.props, null, 2));
-  const [name, setName] = useState(component.name);
-  const [jsonError, setJsonError] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState(null);
-
-  async function handleSave() {
-    let parsed;
-    try {
-      parsed = JSON.parse(text);
-      setJsonError(null);
-    } catch {
-      setJsonError('Invalid JSON.');
-      return;
-    }
-    setSaving(true);
-    setStatus(null);
-    try {
-      await updateComponent(component.id, { name, props: parsed });
-      setStatus('Saved.');
-    } catch (err) {
-      setJsonError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
+function ComponentRow({ component }) {
   return (
-    <div className="border border-hairline bg-paper">
-      <div className="px-4 py-3 border-b border-hairline flex items-center justify-between gap-3">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="font-medium text-ink bg-transparent outline-none border-b border-transparent focus:border-ink"
-        />
-        <span className="text-xs text-slate uppercase tracking-wide">{component.kind}</span>
+    <Link
+      href={`/admin/components/${component.id}`}
+      className="flex items-center justify-between gap-4 px-5 py-4 border-b border-hairline last:border-b-0 hover:bg-ink/[0.02] transition-colors"
+    >
+      <div className="min-w-0">
+        <div className="font-medium text-ink truncate">
+          {component.name}
+          {!!component.is_default && <span className="ml-2 text-xs text-signal">Default</span>}
+        </div>
+        <div className="text-xs text-slate">Updated {component.updated_at}</div>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={16}
-        spellCheck={false}
-        className="w-full font-mono text-xs p-4 outline-none resize-y"
-      />
-      <div className="px-4 pb-4 flex items-center gap-3">
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="text-sm font-medium border border-ink px-4 py-2 hover:bg-ink hover:text-paper transition-colors disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        {jsonError && <span className="text-xs text-red-600">{jsonError}</span>}
-        {status && <span className="text-xs text-green-700">{status}</span>}
-      </div>
-    </div>
+      <span className="text-sm text-signal shrink-0">Edit →</span>
+    </Link>
   );
 }
 
 export default function ComponentsAdmin() {
+  const router = useRouter();
   const [headers, setHeaders] = useState([]);
   const [footers, setFooters] = useState([]);
   const [error, setError] = useState(null);
+  const [creating, setCreating] = useState(null);
 
   async function load() {
     try {
@@ -88,11 +50,13 @@ export default function ComponentsAdmin() {
       kind === 'header'
         ? { logoText: 'Vireon Labs', nav: [{ label: 'Home', href: '/' }], cta: { label: 'Contact', href: '/contact' } }
         : { columns: [], copyright: '© Vireon Labs', social: [] };
+    setCreating(kind);
     try {
-      await createComponent({ name, kind, props: defaultProps });
-      await load();
+      const created = await createComponent({ name, kind, props: defaultProps });
+      router.push(`/admin/components/${created.id}`);
     } catch (err) {
       setError(err.message);
+      setCreating(null);
     }
   }
 
@@ -111,29 +75,45 @@ export default function ComponentsAdmin() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">Headers</h2>
-          <button onClick={() => addComponent('header')} className="text-sm text-signal hover:underline">
-            + New header
+          <button
+            onClick={() => addComponent('header')}
+            disabled={creating === 'header'}
+            className="text-sm text-signal hover:underline disabled:opacity-50"
+          >
+            {creating === 'header' ? 'Creating…' : '+ New header'}
           </button>
         </div>
-        <div className="space-y-4">
-          {headers.map((h) => (
-            <ComponentCard key={h.id} component={h} />
-          ))}
-        </div>
+        {headers.length === 0 ? (
+          <p className="text-sm text-slate">No headers yet.</p>
+        ) : (
+          <div className="border border-hairline bg-paper">
+            {headers.map((h) => (
+              <ComponentRow key={h.id} component={h} />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-sm font-bold uppercase tracking-wide text-slate">Footers</h2>
-          <button onClick={() => addComponent('footer')} className="text-sm text-signal hover:underline">
-            + New footer
+          <button
+            onClick={() => addComponent('footer')}
+            disabled={creating === 'footer'}
+            className="text-sm text-signal hover:underline disabled:opacity-50"
+          >
+            {creating === 'footer' ? 'Creating…' : '+ New footer'}
           </button>
         </div>
-        <div className="space-y-4">
-          {footers.map((f) => (
-            <ComponentCard key={f.id} component={f} />
-          ))}
-        </div>
+        {footers.length === 0 ? (
+          <p className="text-sm text-slate">No footers yet.</p>
+        ) : (
+          <div className="border border-hairline bg-paper">
+            {footers.map((f) => (
+              <ComponentRow key={f.id} component={f} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
